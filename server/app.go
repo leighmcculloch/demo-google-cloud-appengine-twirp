@@ -11,7 +11,7 @@ import (
 
 func init() {
 	handler := geo.NewGeoServer(&GeoServerImpl{}, nil)
-	http.Handle("/", injectAppEngineContextHandler(handler))
+	http.Handle("/", withContext(withCountry(handler)))
 }
 
 type GeoServerImpl struct{}
@@ -38,18 +38,20 @@ func (g *GeoServerImpl) Get(ctx context.Context, r *geo.GetRequest) (*geo.GetRes
 	return resp, nil
 }
 
-func injectAppEngineContextHandler(h http.Handler) http.Handler {
+func withCountry(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := appengine.NewContext(r)
-
-		log.Infof(ctx, "Received %s with headers: %#v", r.URL.Path, r.Header)
-
 		country := r.Header.Get("X-AppEngine-Country")
+		ctx := r.Context()
 		ctx = contextWithCountry(ctx, country)
-
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
+	})
+}
 
-		log.Infof(ctx, "Finished handling")
+func withContext(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := appengine.NewContext(r)
+		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
 	})
 }
