@@ -4,22 +4,22 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/leighmcculloch/demo-google-cloud-appengine-twirp/internal/ctxvalues"
+	"github.com/leighmcculloch/demo-google-cloud-appengine-twirp/rpc/geo"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/log"
 )
 
 func init() {
-	handler := NewGeoServer(&GeoServerImpl{}, nil)
+	handler := geo.NewGeoServer(&GeoServerImpl{}, nil)
 	http.Handle("/", injectAppEngineContextHandler(handler))
 }
 
 type GeoServerImpl struct{}
 
-func (g *GeoServerImpl) Get(ctx context.Context, r *GetRequest) (*GetResponse, error) {
+func (g *GeoServerImpl) Get(ctx context.Context, r *geo.GetRequest) (*geo.GetResponse, error) {
 	log.Infof(ctx, "Received 'Get' request, params: %#v", r)
 
-	country := ctxvalues.Country(ctx)
+	country := contextCountry(ctx)
 
 	log.Infof(ctx, "Raw country: %q", country)
 
@@ -29,7 +29,7 @@ func (g *GeoServerImpl) Get(ctx context.Context, r *GetRequest) (*GetResponse, e
 
 	log.Infof(ctx, "Final country: %q", country)
 
-	resp := &GetResponse{
+	resp := &geo.GetResponse{
 		Country: country,
 	}
 
@@ -45,7 +45,7 @@ func injectAppEngineContextHandler(h http.Handler) http.Handler {
 		log.Infof(ctx, "Received %s with headers: %#v", r.URL.Path, r.Header)
 
 		country := r.Header.Get("X-AppEngine-Country")
-		ctx = ctxvalues.WithCountry(ctx, country)
+		ctx = contextWithCountry(ctx, country)
 
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
