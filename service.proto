@@ -1,0 +1,14 @@
+syntax = "proto3";
+package app;
+option go_package = "app";
+
+service Geo {
+  rpc Get(GetRequest) returns (GetResponse);
+}
+
+message GetRequest {
+}
+
+message GetResponse {
+  string country = 1;
+}
